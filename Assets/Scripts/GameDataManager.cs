@@ -8,8 +8,7 @@ public class GameDataManager : MonoBehaviour
     public static GameDataManager Instance;
     private string SaveDataFilePath;
 
-    public string[] HighScoreNames;
-    public int[] HighScoreValues;
+    public HighScoreEntry[] HighScoreEntries;
 
     public string PlayerName;
     private int MaxNumHighScores = 5;
@@ -30,110 +29,117 @@ public class GameDataManager : MonoBehaviour
     }
 
     [System.Serializable]
+    public class HighScoreEntry
+    {
+        public string name;
+        public int score;
+
+        public HighScoreEntry(string name, int score)
+        {
+            this.name = name;
+            this.score = score;
+        }
+    }
+
+    [System.Serializable]
     class SaveData
     {
-        public string[] HighScoreNames;
-        public int[] HighScoreValues;
+        public HighScoreEntry[] HighScoreEntries;
     }
 
     public void SaveHighScores()
     {
-        Debug.Log("SaveHighScores starting");
         SaveData data = new SaveData();
-        data.HighScoreNames = new string[HighScoreNames.Length];
-        Array.Copy(HighScoreNames, data.HighScoreNames, HighScoreNames.Length);
 
-        data.HighScoreValues = new int[HighScoreValues.Length];
-        Array.Copy(HighScoreValues, data.HighScoreValues, HighScoreValues.Length);
+        data.HighScoreEntries = new HighScoreEntry[HighScoreEntries.Length];
+        for (int i = 0; i < HighScoreEntries.Length; i++)
+        {
+            data.HighScoreEntries[i] = new HighScoreEntry(HighScoreEntries[i].name, HighScoreEntries[i].score);
+        }
 
         string json = JsonUtility.ToJson(data);
 
         File.WriteAllText(SaveDataFilePath, json);
-        Debug.Log("SaveHighScores finished");
     }
 
     public void LoadHighScores()
     {
-        Debug.Log("LoadHighScores starting");
+        HighScoreEntries = new HighScoreEntry[MaxNumHighScores];
+
         if (File.Exists(SaveDataFilePath))
         {
-            Debug.Log("reading file data");
             string json = File.ReadAllText(SaveDataFilePath);
             SaveData data = JsonUtility.FromJson<SaveData>(json);
 
-            HighScoreNames = new string[data.HighScoreNames.Length];
-            Array.Copy(data.HighScoreNames, HighScoreNames, data.HighScoreNames.Length);
-
-            HighScoreValues = new int[data.HighScoreValues.Length];
-            Array.Copy(data.HighScoreValues, HighScoreValues, data.HighScoreValues.Length);
+            // Load high score entries
+            int numDataScores = data.HighScoreEntries.Length;
+            for (int i = 0; i < MaxNumHighScores; i++)
+            {
+                if (i < numDataScores) {
+                    // Load data entry
+                    HighScoreEntries[i] = new HighScoreEntry(data.HighScoreEntries[i].name, data.HighScoreEntries[i].score);
+                }
+                else
+                {
+                    // Load empty score array
+                    HighScoreEntries[i] = new HighScoreEntry("------", 0);
+                }
+            }
         }
         else
         {
             // Create empty score array
+            for (int i = 0; i  < MaxNumHighScores; i++)
+            {
+                HighScoreEntries[i] = new HighScoreEntry("------", 0);
+            }
         }
-            Debug.Log("LoadHighScores finished");
     }
 
     public void CheckAndAddHighScore(int scoreValue)
     {
-        Debug.Log("CheckAndAddHighScore starting");
-
-        // Add an empty element at the end if it's less than max size
-        if (HighScoreNames.Length < MaxNumHighScores)
-        {
-            Debug.Log("appending array element");
-            HighScoreNames.Append("");
-            HighScoreValues.Append(-1);
-        }
-
-        int prevLowestScore = HighScoreValues[HighScoreValues.Length - 1];
+        int prevLowestScore = HighScoreEntries[HighScoreEntries.Length - 1].score;
         if (scoreValue <= prevLowestScore)
         {
-            Debug.Log("score doesn't make the board.  returning");
             return;
         }
 
-        // Insert new score into the array following the last >= score
-        Debug.Log("determining insertIdx");
-        int insertIdx = -1;
-        for (int i = 0; insertIdx < 0 && i < HighScoreValues.Length; i++)
+        // Insert new score into the array following the last > score
+        int insertIdx = MaxNumHighScores;
+        for (int i = 0; i < MaxNumHighScores; i++)
         {
-            if (HighScoreValues[i] < scoreValue)
+            if (scoreValue > HighScoreEntries[i].score)
             {
                 insertIdx = i;
+                break;
             }
         }
-        Debug.Log("insertIdx=" + insertIdx);
+
+        if (insertIdx ==  MaxNumHighScores)
+        {
+            return;
+        }
 
         // Start with last element and work back.  Insert new score along the way
-        Debug.Log("processing arrays");
-        int currentArrayLength = HighScoreNames.Length;
-        for (int i = MaxNumHighScores-1; i >= 0; i--)
+        for (int i = MaxNumHighScores - 1; i >= 0; i--)
         {
             if (i < insertIdx)
             {
                 // Do nothing as high score is better than new score and no change needs to be made
-                Debug.Log("do nothing case");
             }
             else if (i == insertIdx)
             {
                 // Insert new score
-                Debug.Log("insert case");
-                HighScoreNames[i] = PlayerName;
-                HighScoreValues[i] = scoreValue;
+                HighScoreEntries[i] = new HighScoreEntry(PlayerName, scoreValue);
             }
             else
             {
                 // Copy the next highest score into this index (i.e., shift down)
-                Debug.Log("shift down case");
-                HighScoreNames[i] = HighScoreNames[i - 1];
-                HighScoreValues[i] = HighScoreValues[i - 1];
+                HighScoreEntries[i] = new HighScoreEntry(HighScoreEntries[i - 1].name, HighScoreEntries[i - 1].score);
             }
         }
 
         // Save high scores since they were updated
-        Debug.Log("calling SaveHighScores");
         SaveHighScores();
-        Debug.Log("CheckAndAddHighScore finished");
     }
 }

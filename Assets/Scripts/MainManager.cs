@@ -25,15 +25,15 @@ public class MainManager : MonoBehaviour
     void Start()
     {
         // Load best score text
-        string[] highScoreNames = GameDataManager.Instance.HighScoreNames;
-        int[] highScoreValues = GameDataManager.Instance.HighScoreValues;
-        if (highScoreNames.Length > 0)
+        string highScoreName = GameDataManager.Instance.HighScoreEntries[0].name;
+        int highScoreValue = GameDataManager.Instance.HighScoreEntries[0].score;
+        if (highScoreName == "------")
         {
-            BestScoreText.text = "Best Score: " + highScoreNames[0] + " : " + highScoreValues[0];
+            BestScoreText.text = "Best Score: Be the first!"; 
         }
         else
         {
-            BestScoreText.text = "Best Score: Be the first!";
+            BestScoreText.text = "Best Score: " + highScoreName + " : " + highScoreValue;
         }
         
         // Remainder of Start method

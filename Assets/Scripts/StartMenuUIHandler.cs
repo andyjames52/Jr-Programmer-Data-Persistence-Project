@@ -23,13 +23,10 @@ public class StartMenuUIHandler : MonoBehaviour
 
     private void UpdateHighScoresText()
     {
-        string[] highScoreNames = GameDataManager.Instance.HighScoreNames;
-        int[] highScoreValues = GameDataManager.Instance.HighScoreValues;
-
-        HighScoreText.text = "High Scores";
-        for (int i = 0; i < highScoreNames.Length; i++)
+        HighScoreText.text = "";
+        for (int i = 0; i < GameDataManager.Instance.HighScoreEntries.Length; i++)
         {
-            HighScoreText.text += "\r\n" + highScoreNames[i] + "\t" + highScoreValues;
+            HighScoreText.text += "\r\n" + GameDataManager.Instance.HighScoreEntries[i].name + "\t" + GameDataManager.Instance.HighScoreEntries[i].score;
         }
     }
 }
